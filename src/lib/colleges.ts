@@ -8,10 +8,12 @@ export type CollegeCardData = {
   name: string;
   description: string | null;
   institutionType: InstitutionType;
+  managementType: string | null;
   demoRecord: boolean;
   verificationStatus: string;
   officialWebsite: string | null;
   officialAddress: string | null;
+  officialDistrict: string | null;
   officialAdmissionUrl: string | null;
   lastVerifiedAt: Date | null;
   campuses: { city: string; state: string; hostelAvailable: boolean | null }[];
@@ -34,10 +36,12 @@ function mapCollege(college: Awaited<ReturnType<typeof prisma.college.findMany>>
     name: college.name,
     description: college.description,
     institutionType: college.institutionType,
+    managementType: college.managementType,
     demoRecord: college.demoRecord,
     verificationStatus: college.verificationStatus,
     officialWebsite: college.officialWebsite,
     officialAddress: college.officialAddress,
+    officialDistrict: college.officialDistrict,
     officialAdmissionUrl: college.officialAdmissionUrl,
     lastVerifiedAt: college.lastVerifiedAt,
     campuses: college.campuses,

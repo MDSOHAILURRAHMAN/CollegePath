@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Prisma } from "@/generated/prisma/client";
 import { SaveComparisonButton } from "@/components/save-comparison-button";
+import { CompareCollegePicker } from "@/components/compare-college-picker";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +20,12 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
   const raw = await searchParams;
   const selected = (Array.isArray(raw.colleges) ? raw.colleges : raw.colleges ? [raw.colleges] : []).filter(Boolean).slice(0, 3);
   let colleges: ComparedCollege[] = [];
-  let allOptions: { slug: string; name: string }[] = [];
   let unavailable = false;
   try {
-    [colleges, allOptions] = await Promise.all([
-      prisma.college.findMany({ where: { slug: { in: selected }, verificationStatus: { in: ["VERIFIED", "DEMO"] } }, include: compareInclude }),
-      prisma.college.findMany({ where: { verificationStatus: { in: ["VERIFIED", "DEMO"] } }, orderBy: { name: "asc" }, select: { slug: true, name: true } }),
-    ]);
+    colleges = await prisma.college.findMany({
+      where: { slug: { in: selected }, verificationStatus: { in: ["VERIFIED", "DEMO"] } },
+      include: compareInclude,
+    });
   } catch { unavailable = true; }
   const selectedColleges = selected.map(slug => colleges.find(college => college.slug === slug)).filter((college): college is (typeof colleges)[number] => Boolean(college));
   const link = selected.length ? `/compare?${selected.map(slug => `colleges=${encodeURIComponent(slug)}`).join("&")}` : "/compare";
@@ -36,7 +36,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Sear
 
   return <><section className="directory-hero"><div className="page-container"><span className="eyebrow">A SIDE-BY-SIDE VIEW</span><h1>Compare your options.</h1><p>Compare up to three colleges. We only show available information and its verification status.</p></div></section><section className="page-container section-pad">
     {unavailable ? <div className="error-state"><h2>College data is unavailable</h2><p>Connect PostgreSQL to build a comparison.</p></div> : <>
-      <form action="/compare" className="surface" style={{ padding: 17, marginBottom: 21 }}><label className="field-label" htmlFor="compare-colleges">Choose up to three colleges</label><select className="field-control" name="colleges" id="compare-colleges" multiple size={Math.min(6, Math.max(3, allOptions.length))} defaultValue={selected} aria-describedby="compare-help">{allOptions.map(option => <option value={option.slug} key={option.slug}>{option.name}</option>)}</select><p className="data-note" id="compare-help" style={{ margin: "7px 0 12px" }}>Use Ctrl (Windows) or Command (Mac) to select more than one. The comparison URL contains only public college identifiers.</p><button className="btn-primary" type="submit">Compare selected colleges</button></form>
+      <form action="/compare" className="surface" style={{ padding: 17, marginBottom: 21 }}><CompareCollegePicker initialSelection={selectedColleges.map(college => ({ slug: college.slug, name: college.name, institutionType: college.institutionType, officialDistrict: college.officialDistrict, officialState: college.officialState }))} /><p className="data-note" style={{ margin: "12px 0" }}>The comparison URL contains only public college identifiers.</p><button className="btn-primary" type="submit">Compare selected colleges</button></form>
       {!selectedColleges.length ? <div className="empty-state"><h2>Add colleges to compare</h2><p>Choose one or more records above, or start in the directory.</p><Link className="btn-secondary" href="/colleges">Browse colleges</Link></div> : selectedColleges.length < 2 ? <div className="notice" style={{ marginBottom: 16 }}>Add at least one more college to see a side-by-side comparison. Missing information is shown as “Not available.”</div> : <>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, marginBottom: 13 }}><p className="data-note" style={{ margin: 0 }}>Comparison does not designate a universal “best” college.</p><SaveComparisonButton colleges={selectedColleges.map(college => college.slug)} /></div>
         <div className="compare-scroll"><table className="compare-table"><thead><tr><th>Information</th>{selectedColleges.map(college => <th key={college.id}><Link href={`/colleges/${college.slug}`}>{college.name}</Link>{college.demoRecord && <span className="status-demo" style={{ display: "flex", width: "fit-content", marginTop: 7 }}>Demo record</span>}</th>)}</tr></thead><tbody>

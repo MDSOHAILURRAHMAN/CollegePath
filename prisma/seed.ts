@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { collegeSearchAliases } from "@/lib/college-search";
 import { seedJoSAA2026 } from "./seed-josaa-2026";
 import { seedVIT2027 } from "./seed-vit-2027";
+import { seedAisheDirectory } from "./seed-aishe-colleges";
 
 async function main() {
   const nirfVerifiedAt = new Date("2026-11-02T00:00:00.000Z");
@@ -275,6 +276,7 @@ async function main() {
   }
   await seedJoSAA2026();
   await seedVIT2027();
+  await seedAisheDirectory();
   const demos = [
     { slug: "demo-mumbai", name: "CollegePath Demo Institute — Mumbai", city: "Mumbai", state: "Maharashtra" },
     { slug: "demo-bengaluru", name: "CollegePath Demo Institute — Bengaluru", city: "Bengaluru", state: "Karnataka" },

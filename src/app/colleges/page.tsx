@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Building2, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { CollegeCard } from "@/components/college-card";
+import { CollegeNameSearch } from "@/components/college-name-search";
 import { collegeSearchSchema } from "@/lib/schemas";
 import { searchColleges } from "@/lib/colleges";
 import { COURSE_CATEGORIES, INDIAN_STATES } from "@/lib/catalog-options";
@@ -39,7 +40,7 @@ export default async function CollegesPage({ searchParams }: { searchParams: Sea
       <div className="page-container directory-layout">
         <aside className="surface filter-panel"><h2><SlidersHorizontal size={15} style={{ verticalAlign: "-3px", marginRight: 7 }} />Refine your search</h2>
           <form action="/colleges" method="get">
-            <div className="filter-group"><label className="field-label" htmlFor="query">College or city</label><input className="field-control" id="query" name="query" defaultValue={filters.query} placeholder="Search by name or city" maxLength={100} /></div>
+            <div className="filter-group"><label className="field-label" htmlFor="query">College or city</label><CollegeNameSearch defaultValue={filters.query} /></div>
             <div className="filter-group"><label className="field-label" htmlFor="state">State</label><select className="field-control" id="state" name="state" defaultValue={filters.state}><option value="">Any state</option>{INDIAN_STATES.map(state => <option key={state}>{state}</option>)}</select></div>
             <div className="filter-group"><label className="field-label" htmlFor="category">Course category</label><select className="field-control" id="category" name="category" defaultValue={filters.category}><option value="">Any category</option>{COURSE_CATEGORIES.map(([slug, name]) => <option value={slug} key={slug}>{name}</option>)}</select></div>
             <div className="filter-group"><label className="field-label" htmlFor="type">Institution type</label><select className="field-control" id="type" name="type" defaultValue={filters.type}><option value="">Any type</option><option value="GOVERNMENT">Government</option><option value="PRIVATE">Private</option><option value="DEEMED">Deemed</option><option value="AUTONOMOUS">Autonomous</option></select></div>

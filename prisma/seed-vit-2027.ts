@@ -51,7 +51,9 @@ export async function seedVIT2027() {
     where: { id: college.id },
     data: {
       name: "Vellore Institute of Technology",
+      aisheCode: "U-0490",
       institutionType: "PRIVATE",
+      managementType: "Deemed University-Private",
       officialWebsite: "https://vit.ac.in/",
       officialAdmissionUrl: "https://viteee.vit.ac.in/",
       officialAddress: "Tiruvalam Road, Katpadi, Vellore, Tamil Nadu",

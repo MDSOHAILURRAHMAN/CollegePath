@@ -198,12 +198,15 @@ model DataSource {
 model College {
   id                    String               @id @default(cuid())
   slug                  String               @unique
+  aisheCode             String?              @unique
   name                  String
   searchAliases         String[]             @default([])
   description           String?
   institutionType       InstitutionType      @default(OTHER)
+  managementType        String?
   officialWebsite       String?
   officialAddress       String?
+  officialDistrict      String?
   officialState         String?
   officialAdmissionUrl  String?
   recognitionSummary    String?
