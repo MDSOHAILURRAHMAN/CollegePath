@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="CollegePath">
+  <rect width="48" height="48" rx="9" fill="#173b66"/>
+  <path d="M10 17.5 24 11l14 6.5-14 6.5-14-6.5Z" fill="none" stroke="#fff" stroke-linejoin="round" stroke-width="2.5"/>
+  <path d="M16 21v8c4.5 4.1 11.5 4.1 16 0v-8m6-3.5v10" fill="none" stroke="#82d1c1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"/>
+</svg>

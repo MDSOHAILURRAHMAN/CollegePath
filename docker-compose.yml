@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collegepath
+      POSTGRES_PASSWORD: collegepath_dev
+      POSTGRES_DB: collegepath
+    ports:
+      - "5432:5432"
+    volumes:
+      - collegepath-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collegepath -d collegepath"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  collegepath-postgres:

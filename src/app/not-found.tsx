@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <section className="page-container section-pad"><div className="empty-state"><span className="eyebrow">404 · NOT FOUND</span><h1>We couldn’t find that page.</h1><p>It may have moved or the link may be out of date.</p><Link className="btn-primary" href="/colleges">Explore colleges</Link></div></section>; }

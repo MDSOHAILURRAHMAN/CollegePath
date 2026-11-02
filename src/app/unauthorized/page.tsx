@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function UnauthorizedPage() { return <section className="page-container section-pad"><div className="empty-state"><span className="eyebrow">ACCESS RESTRICTED</span><h1>This area isn’t available to this account.</h1><p>Permissions are checked on the server. Return to your own dashboard or contact an administrator if you believe this is an error.</p><Link className="btn-primary" href="/">Back to CollegePath</Link></div></section>; }

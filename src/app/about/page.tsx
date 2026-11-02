@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import { ArrowRight, CheckCircle2, Eye, HeartHandshake } from "lucide-react";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "About CollegePath" };
+export default function AboutPage() {
+  return <><section className="directory-hero"><div className="page-container"><span className="eyebrow">WHY COLLEGEPATH</span><h1>Student-first.<br />Source-aware.</h1><p>CollegePath helps students and families understand their options without turning missing data into confident-sounding claims.</p></div></section><section className="page-container section-pad"><div className="about-grid"><article className="surface about-card"><Eye size={22} color="#0d9488" /><h2>Show what’s known</h2><p>College data has a source, year, and verification status. Missing information stays labelled “Not available.”</p></article><article className="surface about-card"><HeartHandshake size={22} color="#0d9488" /><h2>Support your decision</h2><p>Search and comparisons are free. Counselling is optional and only opens when service details are configured.</p></article><article className="surface about-card"><CheckCircle2 size={22} color="#0d9488" /><h2>Keep recommendations honest</h2><p>Without matching historical admissions evidence, recommendations remain potential options, never promises.</p></article></div><div className="about-cta"><div><span className="eyebrow">START WHERE YOU ARE</span><h2>Explore a little. Ask a question.</h2></div><Link className="btn-primary" href="/colleges">Explore colleges <ArrowRight size={15} /></Link></div></section></>;
+}

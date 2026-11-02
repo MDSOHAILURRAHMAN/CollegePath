@@ -1,0 +1,654 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  COUNSELLOR
+  ADMIN
+}
+
+enum InstitutionType {
+  GOVERNMENT
+  PRIVATE
+  DEEMED
+  AUTONOMOUS
+  OTHER
+}
+
+enum DegreeLevel {
+  CERTIFICATE
+  DIPLOMA
+  UNDERGRADUATE
+  POSTGRADUATE
+  DOCTORAL
+}
+
+enum VerificationStatus {
+  DRAFT
+  PENDING_REVIEW
+  VERIFIED
+  NEEDS_UPDATE
+  ARCHIVED
+  DEMO
+}
+
+enum AdmissionMode {
+  ENTRANCE_EXAM
+  MERIT
+  MANAGEMENT
+  DIRECT
+  OTHER
+}
+
+enum RecommendationBand {
+  AMBITIOUS
+  TARGET
+  SAFER
+  POTENTIAL
+}
+
+enum BookingStatus {
+  PENDING
+  AWAITING_PAYMENT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  CLOSED
+}
+
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  emailVerified     Boolean            @default(false)
+  image             String?
+  role              UserRole           @default(STUDENT)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  accounts          Account[]
+  sessions          Session[]
+  profile            StudentProfile?
+  savedColleges      SavedCollege[]
+  comparisons        SavedComparison[]
+  recommendationRuns RecommendationRun[]
+  bookings           Booking[]
+  leads              Lead[]
+  leadNotes          LeadNote[]
+  notifications      Notification[]
+  consents           ConsentRecord[]
+  auditEvents        AuditLog[]
+  availabilities     CounsellorAvailability[]
+
+  @@index([role, createdAt])
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model StudentProfile {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone               String?
+  currentEducation    String?
+  currentClassOrDegree String?
+  marksPercent        Decimal? @db.Decimal(5, 2)
+  entranceExam        String?
+  entranceScore       String?
+  intendedCourse      String?
+  preferredStates     String[] @default([])
+  institutionPreference InstitutionType?
+  annualBudgetInr     Decimal? @db.Decimal(12, 2)
+  accommodationNeeded Boolean?
+  careerInterests     String[] @default([])
+  priorities          String[] @default([])
+  marketingConsent    Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model DataSource {
+  id                   String               @id @default(cuid())
+  name                 String
+  sourceType           String
+  url                  String?
+  verificationStatus   VerificationStatus   @default(PENDING_REVIEW)
+  checkedAt            DateTime?
+  reviewerNotes        String?
+  colleges             College[]
+  feeRecords           FeeRecord[]
+  rankingRecords       RankingRecord[]
+  placementRecords     PlacementRecord[]
+  accreditations       AccreditationRecord[]
+  scholarships         Scholarship[]
+  admissionRequirements AdmissionRequirement[]
+
+  @@index([verificationStatus, checkedAt])
+}
+
+model College {
+  id                    String               @id @default(cuid())
+  slug                  String               @unique
+  name                  String
+  description           String?
+  institutionType       InstitutionType      @default(OTHER)
+  officialWebsite       String?
+  officialAdmissionUrl  String?
+  recognitionSummary    String?
+  verificationStatus    VerificationStatus   @default(DRAFT)
+  demoRecord            Boolean              @default(false)
+  lastVerifiedAt        DateTime?
+  sourceId              String?
+  source                DataSource?          @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  campuses              Campus[]
+  programs              Program[]
+  feeRecords            FeeRecord[]
+  rankings              RankingRecord[]
+  placements            PlacementRecord[]
+  accreditations        AccreditationRecord[]
+  scholarships          Scholarship[]
+  savedBy               SavedCollege[]
+  comparisonItems       ComparisonItem[]
+  recommendationItems   RecommendationItem[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([name])
+  @@index([institutionType, verificationStatus])
+  @@index([demoRecord, verificationStatus])
+}
+
+model Campus {
+  id                  String   @id @default(cuid())
+  collegeId           String
+  college             College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  name                String?
+  city                String
+  state               String
+  address             String?
+  hostelAvailable     Boolean?
+  hostelLastVerifiedAt DateTime?
+  programs            Program[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([state, city])
+  @@index([collegeId])
+}
+
+model CourseCategory {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String           @unique
+  description String?
+  programs    ProgramCategory[]
+}
+
+model Program {
+  id                   String                @id @default(cuid())
+  collegeId            String
+  college              College               @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  campusId             String?
+  campus               Campus?               @relation(fields: [campusId], references: [id], onDelete: SetNull)
+  name                 String
+  degreeLevel          DegreeLevel
+  durationYears        Int?
+  description          String?
+  admissionMode        AdmissionMode?
+  verificationStatus   VerificationStatus    @default(DRAFT)
+  lastVerifiedAt       DateTime?
+  categories           ProgramCategory[]
+  entranceExams        ProgramEntranceExam[]
+  admissionRequirements AdmissionRequirement[]
+  feeRecords           FeeRecord[]
+  placements           PlacementRecord[]
+  scholarships         Scholarship[]
+  comparisonItems      ComparisonItem[]
+  recommendationItems  RecommendationItem[]
+
+  @@index([collegeId, degreeLevel])
+  @@index([name])
+  @@index([admissionMode])
+}
+
+model ProgramCategory {
+  programId  String
+  categoryId String
+  program    Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  category   CourseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([programId, categoryId])
+  @@index([categoryId])
+}
+
+model EntranceExam {
+  id          String                @id @default(cuid())
+  name        String                @unique
+  officialUrl String?
+  programs    ProgramEntranceExam[]
+  requirements AdmissionRequirement[]
+}
+
+model ProgramEntranceExam {
+  programId    String
+  entranceExamId String
+  program      Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  entranceExam EntranceExam @relation(fields: [entranceExamId], references: [id], onDelete: Cascade)
+
+  @@id([programId, entranceExamId])
+  @@index([entranceExamId])
+}
+
+model AdmissionRequirement {
+  id                   String             @id @default(cuid())
+  programId            String
+  program              Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  entranceExamId       String?
+  entranceExam         EntranceExam?      @relation(fields: [entranceExamId], references: [id], onDelete: SetNull)
+  academicYear         String
+  eligibilityText      String
+  minimumMarksPercent  Decimal?           @db.Decimal(5, 2)
+  admissionMode        AdmissionMode?
+  sourceId             String?
+  source               DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus   VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt       DateTime?
+
+  @@index([programId, academicYear])
+  @@index([entranceExamId])
+}
+
+model FeeRecord {
+  id                   String             @id @default(cuid())
+  collegeId            String
+  college              College            @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  programId            String?
+  program              Program?           @relation(fields: [programId], references: [id], onDelete: SetNull)
+  academicYear         String
+  currency             String             @default("INR")
+  tuitionInr           Decimal?           @db.Decimal(12, 2)
+  compulsoryFeesInr     Decimal?           @db.Decimal(12, 2)
+  hostelInr            Decimal?           @db.Decimal(12, 2)
+  methodology           String?
+  sourceId             String?
+  source                DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus   VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt       DateTime?
+
+  @@index([collegeId, academicYear])
+  @@index([programId, academicYear])
+}
+
+model RankingRecord {
+  id                   String             @id @default(cuid())
+  collegeId            String
+  college              College            @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  rankingBody          String
+  category             String?
+  rank                 Int?
+  academicYear         String
+  sourceId             String?
+  source                DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus   VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt       DateTime?
+
+  @@index([collegeId, academicYear])
+}
+
+model PlacementRecord {
+  id                   String             @id @default(cuid())
+  collegeId            String
+  college              College            @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  programId            String?
+  program              Program?           @relation(fields: [programId], references: [id], onDelete: SetNull)
+  reportingYear        String
+  medianSalaryInr      Decimal?           @db.Decimal(14, 2)
+  averageSalaryInr     Decimal?           @db.Decimal(14, 2)
+  placementRate        Decimal?           @db.Decimal(5, 2)
+  placedCount          Int?
+  eligibleCount        Int?
+  methodology           String?
+  sourceId             String?
+  source                DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus   VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt       DateTime?
+
+  @@index([collegeId, reportingYear])
+  @@index([programId, reportingYear])
+}
+
+model AccreditationRecord {
+  id                 String             @id @default(cuid())
+  collegeId          String
+  college            College            @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  authority          String
+  status             String
+  validFrom          DateTime?
+  validUntil         DateTime?
+  sourceId           String?
+  source             DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt     DateTime?
+
+  @@index([collegeId, verificationStatus])
+}
+
+model Scholarship {
+  id                 String             @id @default(cuid())
+  collegeId          String?
+  college            College?           @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  programId          String?
+  program            Program?           @relation(fields: [programId], references: [id], onDelete: SetNull)
+  name               String
+  description        String
+  eligibility        String?
+  academicYear       String?
+  sourceId           String?
+  source             DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt     DateTime?
+
+  @@index([collegeId])
+  @@index([verificationStatus])
+}
+
+model SavedCollege {
+  userId    String
+  collegeId String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college   College   @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  @@id([userId, collegeId])
+  @@index([collegeId])
+}
+
+model SavedComparison {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  shareId   String           @unique @default(cuid())
+  items     ComparisonItem[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model ComparisonItem {
+  comparisonId String
+  collegeId    String
+  programId    String?
+  position     Int
+  comparison   SavedComparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+  college      College         @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  program      Program?        @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@id([comparisonId, collegeId])
+  @@index([collegeId])
+}
+
+model RecommendationRun {
+  id         String               @id @default(cuid())
+  userId     String
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inputs     Json
+  limitations String[]             @default([])
+  items      RecommendationItem[]
+  createdAt  DateTime             @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model RecommendationItem {
+  id             String              @id @default(cuid())
+  runId          String
+  run            RecommendationRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  collegeId      String
+  college        College             @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  programId      String?
+  program        Program?            @relation(fields: [programId], references: [id], onDelete: SetNull)
+  band           RecommendationBand  @default(POTENTIAL)
+  reasons        String[]             @default([])
+  eligibilityNotes String?
+  dataLimitations String[]            @default([])
+  estimatedAnnualTuitionInr Decimal?    @db.Decimal(12, 2)
+
+  @@index([runId, band])
+}
+
+model CounsellingService {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  name         String
+  description  String
+  durationMinutes Int
+  priceInr     Decimal?   @db.Decimal(10, 2)
+  currency     String     @default("INR")
+  deliverables String[]   @default([])
+  cancellationPolicy String?
+  active       Boolean    @default(false)
+  bookings     Booking[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model CounsellorAvailability {
+  id           String    @id @default(cuid())
+  counsellorId String
+  counsellor   User      @relation(fields: [counsellorId], references: [id], onDelete: Restrict)
+  startsAt     DateTime
+  endsAt       DateTime
+  isAvailable  Boolean   @default(true)
+  booking      Booking?
+
+  @@unique([counsellorId, startsAt])
+  @@index([isAvailable, startsAt])
+}
+
+model Booking {
+  id             String                 @id @default(cuid())
+  studentId      String
+  student        User                   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  serviceId      String
+  service        CounsellingService     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  availabilityId String?                @unique
+  availability   CounsellorAvailability? @relation(fields: [availabilityId], references: [id], onDelete: Restrict)
+  status         BookingStatus          @default(PENDING)
+  studentNotes   String?
+  privateNotes   String?
+  reportUrl      String?
+  payment        Payment?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([studentId, status, createdAt])
+  @@index([status, createdAt])
+}
+
+model Payment {
+  id                   String        @id @default(cuid())
+  bookingId            String        @unique
+  booking              Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  provider             String        @default("razorpay")
+  providerOrderId      String?       @unique
+  providerPaymentId    String?       @unique
+  amountInr            Decimal       @db.Decimal(10, 2)
+  currency             String        @default("INR")
+  status               PaymentStatus @default(CREATED)
+  webhookEventIds      String[]      @default([])
+  refunds              Refund[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model Refund {
+  id               String        @id @default(cuid())
+  paymentId        String
+  payment          Payment       @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  providerRefundId String?       @unique
+  amountInr        Decimal       @db.Decimal(10, 2)
+  status           PaymentStatus @default(REFUND_PENDING)
+  reason           String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([paymentId, status])
+}
+
+model Lead {
+  id             String     @id @default(cuid())
+  userId         String?
+  user           User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name           String
+  email          String
+  phone          String?
+  admissionYear  String?
+  message        String
+  marketingConsent Boolean  @default(false)
+  status         LeadStatus @default(NEW)
+  followUpAt     DateTime?
+  notes          LeadNote[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  note      String
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+model AdmissionGuide {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  summary     String
+  content     String
+  category    String
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  updatedAt   DateTime @updatedAt
+
+  @@index([published, publishedAt])
+  @@index([category])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  readAt      DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, readAt, createdAt])
+}
+
+model ConsentRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consentType String
+  granted     Boolean
+  version     String
+  recordedAt  DateTime @default(now())
+  withdrawnAt DateTime?
+
+  @@index([userId, consentType, recordedAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}
