@@ -10,8 +10,8 @@ export default function DataMethodologyPage() {
       <article>
         <h2>Sources first</h2>
         <p>College records identify their source, ranking or reporting year, verification status, and last-checked date. Official college or authoritative public sources take priority.</p>
-        <p>The initial real-data set contains 17 unique institutions listed in the Ministry of Education’s NIRF India Rankings 2025 Overall and Universities top tens. Rankings, institution names, and published locations are linked to their source. This is a limited ranked set, not a nationwide college directory.</p>
-        <p><a href="https://www.nirfindia.org/Rankings/2025/OverallRanking.html" target="_blank" rel="noreferrer">NIRF 2025 Overall ranking</a><br /><a href="https://www.nirfindia.org/Rankings/2025/UniversityRanking.html" target="_blank" rel="noreferrer">NIRF 2025 Universities ranking</a></p>
+        <p>The initial real-data set contains the Ministry of Education’s NIRF India Rankings 2025 Overall top ten and Universities top 100 (106 unique institutions). Rankings, institution names, and published locations come from the official lists. This is a limited ranked set, not a nationwide college directory.</p>
+        <p><a href="https://www.nirfindia.org/Rankings/2025/OverallRanking.html" target="_blank" rel="noreferrer">NIRF 2025 Overall ranking</a><br /><a href="https://www.nirfindia.org/Rankings/2025/UniversityRanking.html" target="_blank" rel="noreferrer">NIRF 2025 Universities ranking</a><br /><a href="https://www.nirfindia.org/nirfpdfcdn/2025/pdf/Report/IR2025_Report.pdf" target="_blank" rel="noreferrer">NIRF 2025 report, Top 100 Universities table</a></p>
       </article>
       <article>
         <h2>Unknown is not zero</h2>
