@@ -95,7 +95,7 @@ export async function searchColleges(filters: CollegeSearch) {
     ...(and.length ? { AND: and } : {}),
   };
   const take = 12;
-  const [rows, total] = await prisma.$transaction([
+  const [rows, total] = await Promise.all([
     prisma.college.findMany({
       where,
       include: collegeIncludes,
