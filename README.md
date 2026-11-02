@@ -42,7 +42,7 @@ CollegePath is a student-first college discovery and counselling MVP built with 
 	npm run dev
 	```
 
-Open http://localhost:3000. The seed includes the NIRF India Rankings 2025 Overall top ten, with source, category, year, rank, and published city/state. It does not invent program, fee, outcome, or admissions information. Clearly labelled fictional UI fixtures are added only outside production and are excluded from recommendations.
+Open http://localhost:3000. The seed includes the NIRF India Rankings 2025 top ten in the Overall and Universities categories (17 unique institutions), with source, category, year, rank, and published city/state. It does not invent program, fee, outcome, or admissions information. Clearly labelled fictional UI fixtures are added only outside production and are excluded from recommendations.
 
 If Docker Desktop is installed but not running, start Docker Desktop before step 3. If PostgreSQL is hosted elsewhere, set `DATABASE_URL` to that connection string instead.
 

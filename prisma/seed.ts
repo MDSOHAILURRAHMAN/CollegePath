@@ -37,61 +37,102 @@ async function main() {
     { code: "IR-O-U-0500", name: "Banaras Hindu University", city: "Varanasi", state: "Uttar Pradesh", rank: 10 },
   ] as const;
 
-  for (const institution of nirfOverallTopTen) {
-    const slug = `nirf-${institution.code.toLowerCase()}`;
+  async function seedNirfRanking(institution: { slug: string; name: string; city: string; state: string; category: string; rank: number }, sourceId: string) {
     const college = await prisma.college.upsert({
-      where: { slug },
+      where: { slug: institution.slug },
       update: {
         name: institution.name,
         institutionType: "OTHER",
-        description: "Listed in the NIRF India Rankings 2025 Overall category. Other institutional details have not been verified in this dataset.",
+        description: `Listed in the NIRF India Rankings 2025 ${institution.category} category. Other institutional details have not been verified in this dataset.`,
         verificationStatus: "VERIFIED",
         demoRecord: false,
         lastVerifiedAt: nirfVerifiedAt,
-        sourceId: nirfSource.id,
+        sourceId,
       },
       create: {
-        slug,
+        slug: institution.slug,
         name: institution.name,
         institutionType: "OTHER",
-        description: "Listed in the NIRF India Rankings 2025 Overall category. Other institutional details have not been verified in this dataset.",
+        description: `Listed in the NIRF India Rankings 2025 ${institution.category} category. Other institutional details have not been verified in this dataset.`,
         verificationStatus: "VERIFIED",
         demoRecord: false,
         lastVerifiedAt: nirfVerifiedAt,
-        sourceId: nirfSource.id,
+        sourceId,
       },
     });
 
     await prisma.campus.upsert({
-      where: { id: `${slug}-campus` },
+      where: { id: `${institution.slug}-campus` },
       update: { collegeId: college.id, city: institution.city, state: institution.state },
-      create: { id: `${slug}-campus`, collegeId: college.id, city: institution.city, state: institution.state },
+      create: { id: `${institution.slug}-campus`, collegeId: college.id, city: institution.city, state: institution.state },
     });
 
+    const rankingId = `${institution.slug}-nirf-${institution.category.toLowerCase().replaceAll(" ", "-")}-2025`;
     await prisma.rankingRecord.upsert({
-      where: { id: `${slug}-nirf-overall-2025` },
+      where: { id: rankingId },
       update: {
         collegeId: college.id,
         rankingBody: "NIRF India Rankings",
-        category: "Overall",
+        category: institution.category,
         rank: institution.rank,
         academicYear: "2025",
-        sourceId: nirfSource.id,
+        sourceId,
         verificationStatus: "VERIFIED",
         lastVerifiedAt: nirfVerifiedAt,
       },
       create: {
-        id: `${slug}-nirf-overall-2025`,
+        id: rankingId,
         collegeId: college.id,
         rankingBody: "NIRF India Rankings",
-        category: "Overall",
+        category: institution.category,
         rank: institution.rank,
         academicYear: "2025",
-        sourceId: nirfSource.id,
+        sourceId,
         verificationStatus: "VERIFIED",
         lastVerifiedAt: nirfVerifiedAt,
       },
     });
+  }
+
+  for (const institution of nirfOverallTopTen) {
+    await seedNirfRanking({ ...institution, slug: `nirf-${institution.code.toLowerCase()}`, category: "Overall" }, nirfSource.id);
+  }
+
+  const universitySourceUrl = "https://www.nirfindia.org/Rankings/2025/UniversityRanking.html";
+  const universitySource = await prisma.dataSource.upsert({
+    where: { id: "nirf-2025-university-source" },
+    update: {
+      name: "National Institutional Ranking Framework (NIRF), India Rankings 2025: Universities",
+      sourceType: "GOVERNMENT_RANKING",
+      url: universitySourceUrl,
+      verificationStatus: "VERIFIED",
+      checkedAt: nirfVerifiedAt,
+      reviewerNotes: "Official Ministry of Education 2025 Universities ranking. Institution names, rank, city, and state only; no fees or program details are inferred.",
+    },
+    create: {
+      id: "nirf-2025-university-source",
+      name: "National Institutional Ranking Framework (NIRF), India Rankings 2025: Universities",
+      sourceType: "GOVERNMENT_RANKING",
+      url: universitySourceUrl,
+      verificationStatus: "VERIFIED",
+      checkedAt: nirfVerifiedAt,
+      reviewerNotes: "Official Ministry of Education 2025 Universities ranking. Institution names, rank, city, and state only; no fees or program details are inferred.",
+    },
+  });
+  const nirfUniversityTopTen = [
+    { slug: "nirf-ir-o-u-0220", name: "Indian Institute of Science", city: "Bengaluru", state: "Karnataka", category: "Universities", rank: 1 },
+    { slug: "nirf-ir-o-u-0109", name: "Jawaharlal Nehru University", city: "New Delhi", state: "Delhi", category: "Universities", rank: 2 },
+    { slug: "nirf-manipal-academy-of-higher-education", name: "Manipal Academy of Higher Education", city: "Manipal", state: "Karnataka", category: "Universities", rank: 3 },
+    { slug: "nirf-jamia-millia-islamia", name: "Jamia Millia Islamia", city: "New Delhi", state: "Delhi", category: "Universities", rank: 4 },
+    { slug: "nirf-university-of-delhi", name: "University of Delhi", city: "Delhi", state: "Delhi", category: "Universities", rank: 5 },
+    { slug: "nirf-ir-o-u-0500", name: "Banaras Hindu University", city: "Varanasi", state: "Uttar Pradesh", category: "Universities", rank: 6 },
+    { slug: "nirf-birla-institute-of-technology-and-science", name: "Birla Institute of Technology & Science, Pilani", city: "Pilani", state: "Rajasthan", category: "Universities", rank: 7 },
+    { slug: "nirf-amrita-vishwa-vidyapeetham", name: "Amrita Vishwa Vidyapeetham", city: "Coimbatore", state: "Tamil Nadu", category: "Universities", rank: 8 },
+    { slug: "nirf-jadavpur-university", name: "Jadavpur University", city: "Kolkata", state: "West Bengal", category: "Universities", rank: 9 },
+    { slug: "nirf-aligarh-muslim-university", name: "Aligarh Muslim University", city: "Aligarh", state: "Uttar Pradesh", category: "Universities", rank: 10 },
+  ] as const;
+  for (const institution of nirfUniversityTopTen) {
+    await seedNirfRanking(institution, universitySource.id);
   }
 
   const source = process.env.NODE_ENV === "production" ? null : await prisma.dataSource.upsert({
