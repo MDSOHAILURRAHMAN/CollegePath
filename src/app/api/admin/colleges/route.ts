@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { collegeSearchAliases } from "@/lib/college-search";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
   try {
     const created = await prisma.$transaction(async transaction => {
       const source = parsed.data.sourceUrl ? await transaction.dataSource.create({ data: { name: parsed.data.sourceName || "Official institutional source", sourceType: "OFFICIAL_WEBSITE", url: parsed.data.sourceUrl, verificationStatus: "PENDING_REVIEW" } }) : null;
-      const college = await transaction.college.create({ data: { name: parsed.data.name, slug: parsed.data.slug, description: parsed.data.description || null, institutionType: parsed.data.institutionType, officialWebsite: parsed.data.officialWebsite || null, officialAdmissionUrl: parsed.data.officialAdmissionUrl || null, verificationStatus: "DRAFT", demoRecord: false, ...(source ? { sourceId: source.id } : {}), ...(parsed.data.city && parsed.data.state ? { campuses: { create: { city: parsed.data.city, state: parsed.data.state } } } : {}) }, select: { id: true, name: true, slug: true, verificationStatus: true } });
+      const college = await transaction.college.create({ data: { name: parsed.data.name, slug: parsed.data.slug, searchAliases: collegeSearchAliases(parsed.data.name), description: parsed.data.description || null, institutionType: parsed.data.institutionType, officialWebsite: parsed.data.officialWebsite || null, officialAdmissionUrl: parsed.data.officialAdmissionUrl || null, verificationStatus: "DRAFT", demoRecord: false, ...(source ? { sourceId: source.id } : {}), ...(parsed.data.city && parsed.data.state ? { campuses: { create: { city: parsed.data.city, state: parsed.data.state } } } : {}) }, select: { id: true, name: true, slug: true, verificationStatus: true } });
       await transaction.auditLog.create({ data: { actorId: access.session.user.id, action: "COLLEGE_CREATED", entityType: "College", entityId: college.id } });
       return college;
     });

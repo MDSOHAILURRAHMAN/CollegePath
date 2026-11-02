@@ -199,6 +199,7 @@ model College {
   id                    String               @id @default(cuid())
   slug                  String               @unique
   name                  String
+  searchAliases         String[]             @default([])
   description           String?
   institutionType       InstitutionType      @default(OTHER)
   officialWebsite       String?

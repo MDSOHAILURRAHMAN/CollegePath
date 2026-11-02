@@ -74,8 +74,11 @@ const collegeIncludes = {
 export async function searchColleges(filters: CollegeSearch) {
   const and: Prisma.CollegeWhereInput[] = [];
   if (filters.query) {
+    const shortQuery = filters.query.length <= 3;
+    const query = filters.query.toLocaleLowerCase("en-IN");
     and.push({ OR: [
-      { name: { contains: filters.query, mode: "insensitive" } },
+      { name: shortQuery ? { startsWith: filters.query, mode: "insensitive" } : { contains: filters.query, mode: "insensitive" } },
+      { searchAliases: { has: query } },
       { officialAddress: { contains: filters.query, mode: "insensitive" } },
       { campuses: { some: { city: { contains: filters.query, mode: "insensitive" } } } },
       { campuses: { some: { state: { contains: filters.query, mode: "insensitive" } } } },

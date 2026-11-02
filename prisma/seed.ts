@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { collegeSearchAliases } from "@/lib/college-search";
 import { seedJoSAA2026 } from "./seed-josaa-2026";
+import { seedVIT2027 } from "./seed-vit-2027";
 
 async function main() {
   const nirfVerifiedAt = new Date("2026-11-02T00:00:00.000Z");
@@ -43,6 +45,7 @@ async function main() {
       where: { slug: institution.slug },
       update: {
         name: institution.name,
+        searchAliases: collegeSearchAliases(institution.name),
         institutionType: "OTHER",
         description: "Listed in the NIRF India Rankings 2025. Other institutional details have not been verified in this dataset.",
         verificationStatus: "VERIFIED",
@@ -53,6 +56,7 @@ async function main() {
       create: {
         slug: institution.slug,
         name: institution.name,
+        searchAliases: collegeSearchAliases(institution.name),
         institutionType: "OTHER",
         description: "Listed in the NIRF India Rankings 2025. Other institutional details have not been verified in this dataset.",
         verificationStatus: "VERIFIED",
@@ -270,6 +274,7 @@ async function main() {
     await prisma.courseCategory.upsert({ where: { slug }, update: { name, description }, create: { slug, name, description } });
   }
   await seedJoSAA2026();
+  await seedVIT2027();
   const demos = [
     { slug: "demo-mumbai", name: "CollegePath Demo Institute — Mumbai", city: "Mumbai", state: "Maharashtra" },
     { slug: "demo-bengaluru", name: "CollegePath Demo Institute — Bengaluru", city: "Bengaluru", state: "Karnataka" },

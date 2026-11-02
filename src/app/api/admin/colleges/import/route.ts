@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { collegeImportRowSchema } from "@/lib/college-import";
+import { collegeSearchAliases } from "@/lib/college-search";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +60,21 @@ export async function POST(request: Request) {
     try {
       await prisma.$transaction(async transaction => {
         const source = await transaction.dataSource.create({ data: { name: item.row.sourceName || "CSV import source", sourceType: "CSV_IMPORT", url: item.row.sourceUrl || null, verificationStatus: "PENDING_REVIEW" } });
-        const college = await transaction.college.create({ data: { name: item.row.name, slug: item.row.slug, description: item.row.description || null, institutionType: item.row.institutionType, officialWebsite: item.row.officialWebsite || null, officialAdmissionUrl: item.row.officialAdmissionUrl || null, sourceId: source.id, verificationStatus: "DRAFT", demoRecord: false, ...(item.row.city && item.row.state ? { campuses: { create: { city: item.row.city, state: item.row.state } } } : {}) } });
+        const college = await transaction.college.create({
+          data: {
+            name: item.row.name,
+            slug: item.row.slug,
+            searchAliases: collegeSearchAliases(item.row.name),
+            description: item.row.description || null,
+            institutionType: item.row.institutionType,
+            officialWebsite: item.row.officialWebsite || null,
+            officialAdmissionUrl: item.row.officialAdmissionUrl || null,
+            sourceId: source.id,
+            verificationStatus: "DRAFT",
+            demoRecord: false,
+            ...(item.row.city && item.row.state ? { campuses: { create: { city: item.row.city, state: item.row.state } } } : {}),
+          },
+        });
         await transaction.auditLog.create({ data: { actorId: session.user.id, action: "COLLEGE_CSV_IMPORTED", entityType: "College", entityId: college.id, metadata: { row: item.index } } });
       });
       imported += 1;

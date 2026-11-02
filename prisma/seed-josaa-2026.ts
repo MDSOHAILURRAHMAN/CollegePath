@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "@/lib/prisma";
 import { statesInOfficialAddress } from "@/lib/catalog-options";
+import { collegeSearchAliases } from "@/lib/college-search";
 
 type JoSaaProgram = { code: string; name: string };
 type JoSaaInstitution = { code: number; name: string; address: string | null; website: string | null; sourceUrl: string; profileAvailable: boolean; programs: JoSaaProgram[]; feeScheduleText: string | null };
@@ -34,7 +35,7 @@ export async function seedJoSAA2026() {
   const requiredCategories = new Set(snapshot.institutions.flatMap(institution => institution.programs.flatMap(program => categoriesFor(program.name))));
   if ([...requiredCategories].some(slug => !categoryIds.has(slug))) throw new Error("A course category used by the JoSAA data snapshot is missing.");
 
-  const existingColleges = await prisma.college.findMany({ where: { demoRecord: false }, select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true } });
+  const existingColleges = await prisma.college.findMany({ where: { demoRecord: false }, select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true, searchAliases: true } });
   const collegesByName = new Map(existingColleges.map(college => [normalizeName(college.name), college]));
   const checkedAt = new Date(snapshot.fetchedAt);
   let createdColleges = 0;
@@ -52,18 +53,21 @@ export async function seedJoSAA2026() {
     });
 
     let college = collegesByName.get(normalizeName(institution.name));
+    const searchAliases = collegeSearchAliases(institution.name);
+    const existingSearchAliases = college?.searchAliases ?? [];
+    const missingSearchAlias = searchAliases.some(alias => !existingSearchAliases.includes(alias));
     if (college) {
-      if ((!college.officialWebsite && institution.website) || (!college.officialAddress && institution.address) || (!college.officialState && officialState)) {
-        college = await prisma.college.update({ where: { id: college.id }, data: { officialWebsite: college.officialWebsite ?? institution.website, officialAddress: college.officialAddress ?? institution.address, officialState: college.officialState ?? officialState }, select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true } });
+      if ((!college.officialWebsite && institution.website) || (!college.officialAddress && institution.address) || (!college.officialState && officialState) || missingSearchAlias) {
+        college = await prisma.college.update({ where: { id: college.id }, data: { officialWebsite: college.officialWebsite ?? institution.website, officialAddress: college.officialAddress ?? institution.address, officialState: college.officialState ?? officialState, searchAliases }, select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true, searchAliases: true } });
         collegesByName.set(normalizeName(institution.name), college);
       }
     } else {
       const slug = `josaa-2026-${institution.code}`;
       college = await prisma.college.upsert({
         where: { slug },
-        update: { name: institution.name, officialWebsite: institution.website, officialAddress: institution.address, officialState, verificationStatus: "VERIFIED", demoRecord: false, sourceId: source.id, lastVerifiedAt: checkedAt },
-        create: { slug, name: institution.name, description: `Participates in the JoSAA ${snapshot.academicYear} national admission process. Program and fee facts are listed only when linked to an official JoSAA or institution source.`, institutionType: "OTHER", officialWebsite: institution.website, officialAddress: institution.address, officialState, verificationStatus: "VERIFIED", demoRecord: false, sourceId: source.id, lastVerifiedAt: checkedAt },
-        select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true },
+        update: { name: institution.name, officialWebsite: institution.website, officialAddress: institution.address, officialState, searchAliases, verificationStatus: "VERIFIED", demoRecord: false, sourceId: source.id, lastVerifiedAt: checkedAt },
+        create: { slug, name: institution.name, searchAliases, description: `Participates in the JoSAA ${snapshot.academicYear} national admission process. Program and fee facts are listed only when linked to an official JoSAA or institution source.`, institutionType: "OTHER", officialWebsite: institution.website, officialAddress: institution.address, officialState, verificationStatus: "VERIFIED", demoRecord: false, sourceId: source.id, lastVerifiedAt: checkedAt },
+        select: { id: true, name: true, slug: true, officialWebsite: true, officialAddress: true, officialState: true, searchAliases: true },
       });
       collegesByName.set(normalizeName(institution.name), college);
       createdColleges++;
