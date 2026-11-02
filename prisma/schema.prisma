@@ -189,6 +189,7 @@ model DataSource {
   accreditations       AccreditationRecord[]
   scholarships         Scholarship[]
   admissionRequirements AdmissionRequirement[]
+  programs             Program[]
 
   @@index([verificationStatus, checkedAt])
 }
@@ -264,6 +265,8 @@ model Program {
   admissionMode        AdmissionMode?
   verificationStatus   VerificationStatus    @default(DRAFT)
   lastVerifiedAt       DateTime?
+  sourceId             String?
+  source               DataSource?           @relation(fields: [sourceId], references: [id], onDelete: SetNull)
   categories           ProgramCategory[]
   entranceExams        ProgramEntranceExam[]
   admissionRequirements AdmissionRequirement[]
@@ -276,6 +279,7 @@ model Program {
   @@index([collegeId, degreeLevel])
   @@index([name])
   @@index([admissionMode])
+  @@index([sourceId])
 }
 
 model ProgramCategory {

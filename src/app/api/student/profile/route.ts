@@ -36,14 +36,18 @@ export async function PATCH(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Check your profile details.", issues: parsed.error.flatten() }, { status: 400 });
   const { name, ...profile } = parsed.data;
   try {
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: access.session.user.id }, data: { name } }),
-      prisma.studentProfile.upsert({
+    await prisma.$transaction(async transaction => {
+      const existing = await transaction.studentProfile.findUnique({ where: { userId: access.session.user.id }, select: { marketingConsent: true } });
+      await transaction.user.update({ where: { id: access.session.user.id }, data: { name } });
+      await transaction.studentProfile.upsert({
         where: { userId: access.session.user.id },
         update: { ...profile, annualBudgetInr: profile.annualBudgetInr === null || profile.annualBudgetInr === undefined ? null : new Prisma.Decimal(profile.annualBudgetInr) },
         create: { userId: access.session.user.id, ...profile, annualBudgetInr: profile.annualBudgetInr === null || profile.annualBudgetInr === undefined ? null : new Prisma.Decimal(profile.annualBudgetInr) },
-      }),
-    ]);
+      });
+      if ((existing?.marketingConsent ?? false) !== profile.marketingConsent) {
+        await transaction.consentRecord.create({ data: { userId: access.session.user.id, consentType: "MARKETING", granted: profile.marketingConsent, version: "2026-11", ...(!profile.marketingConsent ? { withdrawnAt: new Date() } : {}) } });
+      }
+    });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Your profile could not be saved." }, { status: 503 });

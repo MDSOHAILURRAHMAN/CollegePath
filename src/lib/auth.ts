@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { storeDevelopmentEmail } from "@/lib/dev-mailbox";
 
 const authSecret = env.BETTER_AUTH_SECRET ?? "collegepath-local-development-secret-change-before-deployment";
 
@@ -12,8 +13,12 @@ if (!authSecret || authSecret.length < 32) {
 async function sendAuthEmail(to: string, subject: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.warn("Email is not configured; verification and recovery messages are not being sent.");
-    return;
+    if (env.NODE_ENV === "development") {
+      await storeDevelopmentEmail({ to, subject, html });
+      console.info(`CollegePath development email saved to the local mailbox for ${to}.`);
+      return;
+    }
+    throw new Error("Email delivery is not configured.");
   }
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",

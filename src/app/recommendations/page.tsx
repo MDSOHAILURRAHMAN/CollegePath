@@ -8,7 +8,13 @@ export const metadata: Metadata = { title: "Potential college options", robots: 
 export default async function RecommendationsPage() {
   await requireStudent();
   let categories: { slug: string; name: string }[] = [];
+  let states: string[] = [];
   let unavailable = false;
-  try { categories = await prisma.courseCategory.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true } }); } catch { unavailable = true; }
-  return <section className="page-container protected-page"><div className="dashboard-header"><div><span className="eyebrow">EXPLAINABLE DISCOVERY</span><h1>Potential options</h1><p>Recommendations use verified program records and your declared preferences. Admission likelihood is not assessed.</p></div></div>{unavailable ? <div className="error-state"><h2>Recommendation data is unavailable</h2><p>Connect PostgreSQL and try again.</p></div> : <RecommendationsForm categories={categories} />}</section>;
+  try {
+    [categories, states] = await Promise.all([
+      prisma.courseCategory.findMany({ orderBy: { name: "asc" }, select: { slug: true, name: true } }),
+      prisma.campus.findMany({ where: { college: { verificationStatus: "VERIFIED", demoRecord: false } }, distinct: ["state"], orderBy: { state: "asc" }, select: { state: true } }).then(rows => rows.map(row => row.state)),
+    ]);
+  } catch { unavailable = true; }
+  return <section className="page-container protected-page"><div className="dashboard-header"><div><span className="eyebrow">EXPLAINABLE DISCOVERY</span><h1>Potential options</h1><p>We match verified program records when available. Otherwise, we can show ranked colleges to explore and explain what is still unknown. Admission likelihood is never assessed.</p></div></div>{unavailable ? <div className="error-state"><h2>Recommendation data is unavailable</h2><p>Connect PostgreSQL and try again.</p></div> : <RecommendationsForm categories={categories} states={states} />}</section>;
 }

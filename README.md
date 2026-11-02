@@ -79,14 +79,15 @@ GitHub Actions runs the production build, lint, and type check against PostgreSQ
 - College details and comparisons show source, year, and verification status; missing values remain “Not available.”
 - Better Auth email/password signup, sign-in, sign-out, session handling, and server-side role checks.
 - Student profile, saved colleges, saved comparisons, private recommendation history, and booking history.
-- Transparent recommendations filter verified programs and known hard-budget conflicts. They always state that admission likelihood is not assessed without matching historical cut-off evidence.
+- Transparent recommendations match verified programs when available; when no verified program data match, they return clearly labelled NIRF ranking-and-location exploration suggestions without claiming course, fee, eligibility, or admission fit.
 - Contact enquiries persist to PostgreSQL; staff can add internal notes, follow-up dates, and update lead status.
+- Students can export their account data as JSON or delete their account; deletion removes credentials and student data, clears private booking notes, de-identifies retained financial bookings, and keeps only necessary audit records.
 - Admin college drafts, source review/verification, CSV import, account roles, counselling services, availability, and booking status.
 - Razorpay server-created orders and signature-verified, idempotent payment webhooks. Browser checkout never marks a booking paid.
 
 ## Optional services
 
-- **Email:** Set `RESEND_API_KEY` and `EMAIL_FROM` to enable verification and password-reset mail. Without a provider, local registration remains available, but email verification/recovery messages are not sent.
+- **Email:** Set `RESEND_API_KEY` and `EMAIL_FROM` to deliver verification and password-reset mail in production. In local development without a provider, reset messages are stored in an ignored local mailbox at `/dev/emails`; verification is not required. Production email workflows stay unavailable until a provider is configured.
 - **Payments:** Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` together. Use Razorpay test credentials locally. Configure the webhook URL as `/api/webhooks/razorpay` and subscribe to `payment.captured`, `order.paid`, and `payment.failed`. Without all credentials, checkout reports that payment is unavailable and no payment is simulated.
 - **OAuth/SMS:** Not configured in this release.
 
@@ -96,7 +97,7 @@ Admin college management accepts up to 500 rows and 2 MB per import. Each valid 
 
 Required column: `name`, `slug`. Optional columns: `institutionType`, `description`, `city`, `state`, `officialWebsite`, `officialAdmissionUrl`, `sourceName`, `sourceUrl`.
 
-Use HTTPS source URLs. Import programs, fee records, rankings, placement outcomes, and recognition through their own reviewed workflows; this MVP does not yet include those admin editors.
+Use HTTPS source URLs. Admins can add source-linked program records and optional academic-year fee records from each college card in **College data management**, then review their status and source. Ranking, placement, accreditation, and recognition records still need dedicated admin editors; CSV import for related data types is not available.
 
 ## Deployment
 
@@ -108,6 +109,6 @@ Use HTTPS source URLs. Import programs, fee records, rankings, placement outcome
 
 ## Important release gaps
 
-The initial real-data seed is a small NIRF-ranked subset, not a nationwide admissions catalog. It contains no verified programs, current tuition, admission requirements, or placement outcomes. Those facts require official institution or regulator sources, periodic review, and additional source-aware import workflows before students should rely on them for application decisions. Email and payment integrations require operator credentials. Counselling notifications, refund execution, complete program/fee/ranking/accreditation CRUD, CSV import for every related data type, guardian/child consent safeguards, and a formal account deletion/export workflow need business/provider setup and further implementation. Policy pages are templates and require legal review; their presence does not establish compliance.
+The current real-data seed contains the NIRF 2025 Overall top ten and Universities top 100; it is not a nationwide admissions catalog. It contains no verified program offerings, current tuition, admission requirements, or placement outcomes. Admins can add and review sourced program and fee records, but current published facts must be entered from official institution or regulator sources and periodically rechecked before students rely on them for applications. Ranking, placement, accreditation, and recognition admin editors, CSV import for related data types, counselling notifications, refund execution, and guardian/child consent safeguards still need implementation and provider or policy setup. Email and payment integrations require operator credentials. Policy pages are templates and require legal review; their presence does not establish compliance.
 
 See [docs/api.md](docs/api.md) for route details and [data methodology](src/app/data-methodology/page.tsx) for public data handling.
