@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { CollegeCard } from "@/components/college-card";
 import { CollegeSearch } from "@/components/college-search";
 
-const savedCollegeInclude = { college: { include: { campuses: { select: { id: true, name: true, city: true, state: true, hostelAvailable: true, hostelLastVerifiedAt: true } }, programs: { where: { verificationStatus: { in: ["VERIFIED", "DEMO"] as const } }, select: { id: true, name: true, degreeLevel: true, categories: { include: { category: { select: { slug: true, name: true } } } } } }, feeRecords: { where: { verificationStatus: "VERIFIED" as const }, orderBy: { academicYear: "desc" as const }, select: { tuitionInr: true, compulsoryFeesInr: true, academicYear: true } }, source: { select: { name: true, url: true, verificationStatus: true } } } } } satisfies Prisma.SavedCollegeInclude;
+const savedCollegeInclude = { college: { include: { campuses: { select: { id: true, name: true, city: true, state: true, hostelAvailable: true, hostelLastVerifiedAt: true } }, programs: { where: { verificationStatus: { in: ["VERIFIED", "DEMO"] as const } }, select: { id: true, name: true, degreeLevel: true, academicYear: true, categories: { include: { category: { select: { slug: true, name: true } } } } } }, feeRecords: { where: { verificationStatus: "VERIFIED" as const }, orderBy: { academicYear: "desc" as const }, select: { tuitionInr: true, compulsoryFeesInr: true, academicYear: true } }, source: { select: { name: true, url: true, verificationStatus: true } } } } } satisfies Prisma.SavedCollegeInclude;
 type SavedCollegeRow = Prisma.SavedCollegeGetPayload<{ include: typeof savedCollegeInclude }>;
 
 export const dynamic = "force-dynamic";

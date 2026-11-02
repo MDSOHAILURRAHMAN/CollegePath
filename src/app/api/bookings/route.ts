@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +25,8 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Choose a valid service and available time." }, { status: 400 });
   try {
     const booking = await prisma.$transaction(async transaction => {
-      const [service, slot] = await Promise.all([
-        transaction.counsellingService.findFirst({ where: { id: parsed.data.serviceId, active: true } }),
-        transaction.counsellorAvailability.findUnique({ where: { id: parsed.data.availabilityId }, include: { counsellor: { select: { role: true } } } }),
-      ]);
+      const service = await transaction.counsellingService.findFirst({ where: { id: parsed.data.serviceId, active: true } });
+      const slot = await transaction.counsellorAvailability.findUnique({ where: { id: parsed.data.availabilityId }, include: { counsellor: { select: { role: true } } } });
       if (!service) throw new Error("SERVICE_UNAVAILABLE");
       if (!service.priceInr) throw new Error("SERVICE_PRICE_MISSING");
       if (!slot || !slot.isAvailable || slot.startsAt <= new Date() || slot.counsellor.role !== "COUNSELLOR") throw new Error("SLOT_UNAVAILABLE");
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
         select: { id: true, status: true, createdAt: true, service: { select: { name: true } }, availability: { select: { startsAt: true, endsAt: true } } },
       });
     });
-    return NextResponse.json({ booking, paymentSetup: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) }, { status: 201 });
+    return NextResponse.json({ booking, paymentSetup: Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET) }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message === "SERVICE_UNAVAILABLE") return NextResponse.json({ error: "This counselling service is not currently bookable." }, { status: 404 });

@@ -16,7 +16,7 @@ export function CollegeCard({ college, saved = false }: { college: CollegeCardDa
     <article className="college-card">
       <div className="college-card-art"><span className={college.demoRecord ? "status-demo" : "status-verified"}>{college.demoRecord ? "Demo data · not verified" : <><BadgeCheck size={12} /> Verified record</>}</span><Building2 size={38} aria-hidden="true" /></div>
       <div className="college-card-body">
-        <p className="college-card-location"><MapPin size={12} aria-hidden="true" />{locations.join(" · ") || "Location not available"}</p>
+        <p className="college-card-location"><MapPin size={12} aria-hidden="true" />{locations.join(" · ") || college.officialAddress || "Location not available"}</p>
         <h3><Link href={`/colleges/${college.slug}`}>{college.name}</Link></h3>
         <div className="college-tags"><span className="college-tag">{typeLabel[college.institutionType]}</span>{categories.map(category => <span className="college-tag" key={category}>{category}</span>)}</div>
         {ranking && <p className="data-note" style={{ margin: "10px 0 0" }}>{ranking.rankingBody}{ranking.category ? ` Â· ${ranking.category}` : ""} rank {ranking.rank} ({ranking.academicYear})</p>}

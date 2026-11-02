@@ -184,6 +184,7 @@ model DataSource {
   reviewerNotes        String?
   colleges             College[]
   feeRecords           FeeRecord[]
+  feeSchedules         FeeSchedule[]
   rankingRecords       RankingRecord[]
   placementRecords     PlacementRecord[]
   accreditations       AccreditationRecord[]
@@ -201,6 +202,8 @@ model College {
   description           String?
   institutionType       InstitutionType      @default(OTHER)
   officialWebsite       String?
+  officialAddress       String?
+  officialState         String?
   officialAdmissionUrl  String?
   recognitionSummary    String?
   verificationStatus    VerificationStatus   @default(DRAFT)
@@ -211,6 +214,7 @@ model College {
   campuses              Campus[]
   programs              Program[]
   feeRecords            FeeRecord[]
+  feeSchedules          FeeSchedule[]
   rankings              RankingRecord[]
   placements            PlacementRecord[]
   accreditations        AccreditationRecord[]
@@ -261,6 +265,7 @@ model Program {
   name                 String
   degreeLevel          DegreeLevel
   durationYears        Int?
+  academicYear         String?
   description          String?
   admissionMode        AdmissionMode?
   verificationStatus   VerificationStatus    @default(DRAFT)
@@ -348,6 +353,23 @@ model FeeRecord {
 
   @@index([collegeId, academicYear])
   @@index([programId, academicYear])
+}
+
+model FeeSchedule {
+  id                 String             @id @default(cuid())
+  collegeId          String
+  college            College            @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  academicYear       String
+  publishedText      String             @db.Text
+  sourceId           String?
+  source             DataSource?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  verificationStatus VerificationStatus @default(PENDING_REVIEW)
+  lastVerifiedAt     DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([collegeId, academicYear, sourceId])
+  @@index([verificationStatus, academicYear])
 }
 
 model RankingRecord {

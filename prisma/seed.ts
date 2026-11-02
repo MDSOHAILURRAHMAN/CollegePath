@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { seedJoSAA2026 } from "./seed-josaa-2026";
 
 async function main() {
   const nirfVerifiedAt = new Date("2026-11-02T00:00:00.000Z");
@@ -268,6 +269,7 @@ async function main() {
   for (const [slug, name, description] of categories) {
     await prisma.courseCategory.upsert({ where: { slug }, update: { name, description }, create: { slug, name, description } });
   }
+  await seedJoSAA2026();
   const demos = [
     { slug: "demo-mumbai", name: "CollegePath Demo Institute — Mumbai", city: "Mumbai", state: "Maharashtra" },
     { slug: "demo-bengaluru", name: "CollegePath Demo Institute — Bengaluru", city: "Bengaluru", state: "Karnataka" },
@@ -335,7 +337,7 @@ async function main() {
 }
 
 main()
-  .then(() => console.info("Seeded clearly labelled development demo records."))
+  .then(() => console.info(process.env.NODE_ENV === "production" ? "Production seed excludes demo records." : "Seeded clearly labelled development demo records."))
   .catch(error => {
     console.error(error);
     process.exitCode = 1;

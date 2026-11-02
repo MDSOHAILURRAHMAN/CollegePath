@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { recommendationSchema } from "@/lib/schemas";
 import { recommendColleges } from "@/lib/recommendations";
+import { statesInOfficialAddress } from "@/lib/catalog-options";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +31,13 @@ export async function POST(request: Request) {
       where: { verificationStatus: "VERIFIED", demoRecord: false, programs: { some: programFilter } },
       take: 250,
       select: {
-        id: true, slug: true, name: true, institutionType: true, officialAdmissionUrl: true, demoRecord: true, verificationStatus: true,
+        id: true, slug: true, name: true, institutionType: true, officialAdmissionUrl: true, officialState: true, officialAddress: true, demoRecord: true, verificationStatus: true,
         campuses: { select: { state: true } },
         programs: { where: { verificationStatus: "VERIFIED", degreeLevel: parsed.data.degreeLevel }, select: { degreeLevel: true, categories: { include: { category: { select: { slug: true, name: true } } } } } },
         feeRecords: { where: { verificationStatus: "VERIFIED" }, orderBy: { academicYear: "desc" }, take: 1, select: { tuitionInr: true } },
       },
     });
-    let recommendations = recommendColleges(parsed.data, rows.map(college => ({ ...college, annualTuitionInr: college.feeRecords[0]?.tuitionInr?.toNumber() ?? null })));
+    let recommendations = recommendColleges(parsed.data, rows.map(college => ({ ...college, campuses: [...college.campuses, ...(college.officialState ? [{ state: college.officialState }] : statesInOfficialAddress(college.officialAddress).map(state => ({ state })))], annualTuitionInr: college.feeRecords[0]?.tuitionInr?.toNumber() ?? null })));
     let rankingFallback = false;
     if (recommendations.length === 0) {
       const rankedColleges = await prisma.college.findMany({
@@ -44,7 +45,10 @@ export async function POST(request: Request) {
           verificationStatus: "VERIFIED",
           demoRecord: false,
           rankings: { some: { verificationStatus: "VERIFIED", academicYear: "2025", rankingBody: "NIRF India Rankings" } },
-          ...(parsed.data.preferredStates.length ? { campuses: { some: { state: { in: parsed.data.preferredStates, mode: "insensitive" } } } } : {}),
+          ...(parsed.data.preferredStates.length ? { OR: [
+            { campuses: { some: { state: { in: parsed.data.preferredStates, mode: "insensitive" } } } },
+            { officialState: { in: parsed.data.preferredStates, mode: "insensitive" } },
+          ] } : {}),
         },
         take: 250,
         select: {

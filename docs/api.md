@@ -15,6 +15,7 @@ All JSON endpoints use same-origin requests. Request bodies and query strings ar
 | `POST /api/recommendations` | Validated transparent matching; optionally stores the result for the signed-in student. |
 | `POST /api/leads` | Rate-limited public counselling enquiry; returns `201` only after persistence. |
 | `GET /api/dev/emails?email=...` | Loopback-only local development mailbox for password-reset previews; returns `404` outside development. |
+| `GET /api/health` | Database/provider readiness and verified directory counts; does not return secret values. |
 
 ## Student
 
@@ -35,6 +36,7 @@ All JSON endpoints use same-origin requests. Request bodies and query strings ar
 | `GET /api/bookings` | Current student’s own counselling bookings. |
 | `POST /api/bookings` | Reserve a configured future counsellor slot and create a pending-payment booking. |
 | `POST /api/payments/create-order` | Create/reuse a server-side Razorpay order for an owned booking. |
+| `POST /api/payments/verify` | Verify Checkout HMAC, fetch the payment from Razorpay, and confirm only a captured payment matching the student's booking. |
 
 ## Staff and administration
 
@@ -58,7 +60,7 @@ All JSON endpoints use same-origin requests. Request bodies and query strings ar
 | `PATCH /api/admin/services/{serviceId}` | Update/publish a service only when price, deliverables, and policy exist. |
 | `GET /api/admin/availability` | Future counsellor slots. |
 | `POST /api/admin/availability` | Add a future slot for an account with the counsellor role. |
-| `POST /api/webhooks/razorpay` | Verify HMAC, amount, currency, and event idempotency before payment/booking updates. |
+| `POST /api/webhooks/razorpay` | Verify raw-body HMAC, amount, currency, and event idempotency before handling `payment.captured` or `payment.failed`. |
 
 ## CSV example
 

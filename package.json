@@ -13,7 +13,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "node scripts/run-seed.mjs",
+    "data:sync:josaa": "node scripts/sync-josaa-2026.mjs",
     "admin:promote": "tsx scripts/promote-user.ts"
   },
   "engines": {

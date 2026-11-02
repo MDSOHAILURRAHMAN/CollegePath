@@ -11,7 +11,7 @@ if (!authSecret || authSecret.length < 32) {
 }
 
 async function sendAuthEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = env.RESEND_API_KEY;
   if (!apiKey) {
     if (env.NODE_ENV === "development") {
       await storeDevelopmentEmail({ to, subject, html });
@@ -23,7 +23,8 @@ async function sendAuthEmail(to: string, subject: string, html: string) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.EMAIL_FROM, to, subject, html }),
+    body: JSON.stringify({ from: env.EMAIL_FROM, to: [to], subject, html }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`Email provider rejected the message (${response.status}).`);
 }

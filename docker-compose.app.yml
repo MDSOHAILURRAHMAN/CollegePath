@@ -1,6 +1,21 @@
 services:
+  database-tools:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: database-tools
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://collegepath:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}@postgres:5432/collegepath?schema=public
+    command: ["sh", "-c", "npm run db:deploy && npm run db:seed"]
+    depends_on:
+      postgres:
+        condition: service_healthy
   web:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
     environment:
       DATABASE_URL: postgresql://collegepath:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment}@postgres:5432/collegepath?schema=public
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in your environment}

@@ -29,7 +29,7 @@ CollegePath is a student-first college discovery and counselling MVP built with 
 	docker compose up -d postgres
 	```
 
-4. Apply the checked-in migration and seed sourced NIRF records plus local-only demo fixtures:
+4. Apply migrations and seed the sourced NIRF directory, JoSAA program snapshot, and local-only demo fixtures:
 
 	```powershell
 	npm run db:deploy
@@ -42,7 +42,7 @@ CollegePath is a student-first college discovery and counselling MVP built with 
 	npm run dev
 	```
 
-Open http://localhost:3000. The seed includes the NIRF India Rankings 2025 Overall top ten and Universities top 100 (106 unique institutions), with source, category, year, rank, and published city/state. It does not invent program, fee, outcome, or admissions information. Clearly labelled fictional UI fixtures are added only outside production and are excluded from recommendations.
+Open http://localhost:3000. The seed includes the NIRF India Rankings 2025 Overall top ten and Universities top 100 (106 unique institutions), plus the official JoSAA 2026-27 participating-institute cohort. The snapshot captured on 2 November 2026 covers 138 institutes, 1,007 program listings, and 28 fee panels that explicitly refer to the 2026-27 session; 11 directory entries had no program rows in the captured profiles. Some fee panels link to an institute’s separate fee page instead of listing amounts. Captured fee text and links are preserved verbatim and are not converted into annual totals or compared across semesters, categories, or accommodation choices. The directory is a useful national cohort, not a complete catalog of every Indian college or course. Clearly labelled fictional UI fixtures are added only outside production and are excluded from recommendations.
 
 If Docker Desktop is installed but not running, start Docker Desktop before step 3. If PostgreSQL is hosted elsewhere, set `DATABASE_URL` to that connection string instead.
 
@@ -69,7 +69,7 @@ npm run test:e2e
 npm run build
 ```
 
-`npm run db:migrate` is for local schema changes and creates new migrations. Use `npm run db:deploy` to apply checked-in migrations in a deployment. The initial SQL migration is generated from `prisma/schema.prisma`.
+`npm run db:migrate` is for local schema changes and creates new migrations. Use `npm run db:deploy` to apply checked-in migrations in a deployment. `npm run data:sync:josaa` refreshes the official source snapshot; inspect the generated JSON diff before committing it, then run `npm run db:seed` to upsert source-linked records. This data refresh is a manual annual release step, not an automatic live scrape.
 
 GitHub Actions runs the production build, lint, and type check against PostgreSQL on pushes and pull requests to `main`.
 
@@ -83,12 +83,13 @@ GitHub Actions runs the production build, lint, and type check against PostgreSQ
 - Contact enquiries persist to PostgreSQL; staff can add internal notes, follow-up dates, and update lead status.
 - Students can export their account data as JSON or delete their account; deletion removes credentials and student data, clears private booking notes, de-identifies retained financial bookings, and keeps only necessary audit records.
 - Admin college drafts, source review/verification, CSV import, account roles, counselling services, availability, and booking status.
-- Razorpay server-created orders and signature-verified, idempotent payment webhooks. Browser checkout never marks a booking paid.
+- Razorpay server-created orders, server-side checkout signature and captured-payment verification, and signed payment webhooks. Browser checkout never marks a booking paid.
+- `/api/health` reports database status, provider configuration status, and verified directory coverage without exposing credentials.
 
 ## Optional services
 
-- **Email:** Set `RESEND_API_KEY` and `EMAIL_FROM` to deliver verification and password-reset mail in production. In local development without a provider, reset messages are stored in an ignored local mailbox at `/dev/emails`; verification is not required. Production email workflows stay unavailable until a provider is configured.
-- **Payments:** Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` together. Use Razorpay test credentials locally. Configure the webhook URL as `/api/webhooks/razorpay` and subscribe to `payment.captured`, `order.paid`, and `payment.failed`. Without all credentials, checkout reports that payment is unavailable and no payment is simulated.
+- **Email:** Production startup requires `RESEND_API_KEY` and `EMAIL_FROM`. Verify the sender domain in Resend and use a domain-scoped sending key. In local development without a provider, reset messages are stored in an ignored local mailbox at `/dev/emails`; verification is not required.
+- **Payments:** Production startup requires live `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET`. Use test credentials only in development/staging. Configure the live webhook URL as `/api/webhooks/razorpay` and subscribe to `payment.captured` and `payment.failed`. Keep the webhook secret from the same Razorpay mode as the API keys. Without credentials, the site will not start in production and local checkout remains disabled.
 - **OAuth/SMS:** Not configured in this release.
 
 ## College CSV import
@@ -101,14 +102,15 @@ Use HTTPS source URLs. Admins can add source-linked program records and optional
 
 ## Deployment
 
-- Set a strong `BETTER_AUTH_SECRET`, a persistent PostgreSQL `DATABASE_URL`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_APP_URL` for the deployed origin.
+- Set a strong `BETTER_AUTH_SECRET`, a persistent PostgreSQL `DATABASE_URL`, and matching HTTPS `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL` for the deployed origin. `NEXT_PUBLIC_APP_URL` must be present during the production build as well as at runtime so canonical links and metadata use the real domain. The Docker build requires it explicitly; Compose defaults to localhost only for local use.
+- Configure Resend and Razorpay secrets in the hosting platform’s secret manager. Production startup validates all provider credentials and rejects non-HTTPS site URLs or non-live Razorpay keys. Never put production secrets in `.env`, GitHub, or the source snapshot.
 - Use HTTPS, a managed PostgreSQL service, backups, and `npm run db:deploy` as a release step.
-- Apply migrations and seed the NIRF subset before opening the directory. Set email and payment credentials only after the corresponding provider accounts and verified webhook URLs are ready.
-- `Dockerfile` builds Next standalone output. `docker-compose.app.yml` is a self-hosted example; set `POSTGRES_PASSWORD`, `BETTER_AUTH_SECRET`, and external provider credentials in the deployment environment. Never commit `.env`.
+- Apply migrations, run `npm run db:seed`, and confirm `/api/health` reports the expected directory counts before opening registration. Complete email-domain verification and a live-mode Razorpay test before enabling paid counselling.
+- `Dockerfile` builds Next standalone output and includes a separate database-tools target. For the self-hosted Compose example, set `POSTGRES_PASSWORD`, run `docker compose --profile tools run --rm database-tools` once to migrate and seed the catalog, then start the web service with `docker compose up -d web`. Set `BETTER_AUTH_SECRET`, the app URLs, and external provider credentials in the deployment environment. Never commit `.env`.
 - Configure proxy host/forwarded headers and database network access for the platform you choose. Review cookies, rate limiting, monitoring, backup/restore, and data retention before opening registration.
 
 ## Important release gaps
 
-The current real-data seed contains the NIRF 2025 Overall top ten and Universities top 100; it is not a nationwide admissions catalog. It contains no verified program offerings, current tuition, admission requirements, or placement outcomes. Admins can add and review sourced program and fee records, but current published facts must be entered from official institution or regulator sources and periodically rechecked before students rely on them for applications. Ranking, placement, accreditation, and recognition admin editors, CSV import for related data types, counselling notifications, refund execution, and guardian/child consent safeguards still need implementation and provider or policy setup. Email and payment integrations require operator credentials. Policy pages are templates and require legal review; their presence does not establish compliance.
+The real-data directory now includes current JoSAA 2026-27 undergraduate program names for participating IITs, IISc, NITs, IIEST, IIITs, and Other-GFTIs, plus 28 official fee panels with current-year references. Some panels provide linked fee information rather than numerical amounts. It is not every Indian institution, course, or campus; many institutions publish no normalized 2026-27 schedule in JoSAA. It contains no nationwide verified admission requirements or placement outcomes. Numeric fee comparisons are limited to separately reviewed annual tuition records; raw schedules are not treated as annual estimates. The JoSAA source snapshot must be refreshed and reviewed for each admission year. Ranking, placement, accreditation, and recognition admin editors, counseling notifications, refund execution, and guardian/child consent safeguards still need implementation and provider or policy setup. Live launch also requires the operator to configure verified Resend and Razorpay accounts in the hosting secret manager. Policy pages are templates and require legal review; their presence does not establish compliance.
 
 See [docs/api.md](docs/api.md) for route details and [data methodology](src/app/data-methodology/page.tsx) for public data handling.
